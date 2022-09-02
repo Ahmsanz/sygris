@@ -1,0 +1,77 @@
+version: "3.3"
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    hostname: "rabbitmq"
+    ports:
+      - 15673:15672
+      - 5673:5672
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "5672"]
+      interval: 5s
+      timeout: 15s
+      retries: 1
+    networks:
+      - billing-network
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    volumes:
+      - ./database:/data/db
+    ports:
+      - 27017:27017
+    networks:
+      - billing-network
+    restart: "no"
+
+  checkout:
+    container_name: checkout
+    image: checkout
+    build:
+      context: checkout/
+      dockerfile: ./Dockerfile
+    command: npm run start:dev
+    ports:
+      - 3000:3000
+    networks:
+      - billing-network
+    restart: on-failure
+    depends_on:
+      - rabbitmq
+      - mongodb
+
+  billing:
+    container_name: billing
+    image: billing
+    build:
+      context: billing/
+      dockerfile: ./Dockerfile
+    command: npm run start:dev
+    ports:
+      - 5000:5000
+    networks:
+      - billing-network
+    restart: on-failure
+    depends_on:
+      - rabbitmq
+      - mongodb
+
+  logistic:
+    container_name: logistic
+    image: logistic
+    build:
+      context: logistic/
+      dockerfile: ./Dockerfile
+    command: npm run start:dev
+    ports:
+      - 8000:8000
+    networks:
+      - billing-network
+    restart: on-failure
+    depends_on:
+      - billing
+
+networks:
+  billing-network:
+    driver: bridge

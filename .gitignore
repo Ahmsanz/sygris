@@ -1,0 +1,7 @@
+billing/node_modules
+billing/dist
+checkout/node_modules
+checkout/dist
+logistic/node_modules
+logistic/dist
+database
